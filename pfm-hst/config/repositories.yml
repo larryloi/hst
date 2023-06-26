@@ -1,0 +1,25 @@
+---
+repositories:
+  general:
+    pool_size: 4
+    # validation_interval: 15 # sec
+    # reconnect_interval: 1 # sec
+    # enable_sql_log: true
+  ops_repository:
+    database: <%= ENV['SRC_MYSQL_DATABASE'] %>
+    database_url: mysql2://<%= ENV['SRC_MYSQL_USER'] %>:<%= ENV['SRC_MYSQL_PASSWORD'] %>@<%= ENV['SRC_MYSQL_HOST'] %>:<%= ENV['SRC_MYSQL_PORT'] || 3306 %>/<%= ENV['SRC_MYSQL_DATABASE'] %>
+    enable_sql_log: <%= ENV['SRC_ENABLE_SQL_LOG'] || false %>
+    # database_url: mysql2://chronos:chronos.pa$$w0rd123@cms-vdb01.prd6.gamesource.local:6033/g2_ap_production
+    # validation_interval: 15 # sec
+    # reconnect_interval: 1 # sec
+    # pool_size: 4
+    #enable_sql_log: true
+  hst_repository:
+    database: <%= ENV['DST_MYSQL_DATABASE'] %>
+    database_url: mysql2://<%= ENV['DST_MYSQL_USER'] %>:<%= ENV['DST_MYSQL_PASSWORD'] %>@<%= ENV['DST_MYSQL_HOST'] %>:<%= ENV['DST_MYSQL_PORT'] || 3306 %>/<%= ENV['DST_MYSQL_DATABASE'] %>
+    enable_sql_log: <%= ENV['DST_ENABLE_SQL_LOG'] || false %>
+    # database_url: mysql2://chronos:chronos.pa$$w0rd123@chms-vdb01.prd6.gamesource.local:6033/g2_aph_production
+    # validation_interval: 15 # sec
+    # reconnect_interval: 1 # sec
+    # pool_size: 4
+    # enable_sql_log: true

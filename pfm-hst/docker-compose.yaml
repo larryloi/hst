@@ -1,0 +1,74 @@
+version: '3'
+services:
+  app:
+    image: "${REPO_PATH}${IMAGE}:${TAG}"
+    #build: .
+    env_file:
+      - .env
+    stdin_open: true
+    tty: true
+#    depends_on:
+#      - dst-db
+#      - src-db
+    networks:
+      - platform_integration
+      #platform_integration:
+      #  ipv4_address: 192.168.19.61
+
+
+  dst-db:
+    image: mysql:8.0.17
+    container_name: "${DST_MYSQL_HOST}"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: "${DST_MYSQL_DATABASE}"
+    ports:
+      - 3302:3306
+    volumes:
+      - ../das/db.config/mysql/db.init.8.x/dst:/docker-entrypoint-initdb.d
+      - ../das/db.config/mysql/db.conf.8.x:/etc/mysql/conf.d
+      - vol-dst-db:/var/lib/mysql
+    networks:
+      - platform_integration
+
+  src-db:
+    image: mysql:8.0.17
+    container_name: "${SRC_MYSQL_HOST}"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: "${SRC_MYSQL_DATABASE}"
+    ports:
+      - 3301:3306
+    volumes:
+      - ../das/db.config/mysql/db.init.8.x/src:/docker-entrypoint-initdb.d
+      - ../das/db.config/mysql/db.conf.8.x:/etc/mysql/conf.d
+      - vol-src-db:/var/lib/mysql
+    networks:
+      - platform_integration
+      #platform_integration:
+      #  ipv4_address: 192.168.19.63
+
+#  admin:
+#    image: "docker-repos:8123/chronos2/chronos2_utils:1.0.0"
+#    #build: .
+#    env_file:
+#      - .env
+#    volumes:
+#      - ./db:/app/db
+#    entrypoint: /bin/bash
+#    #entrypoint: "entrypoint.sh"
+#    stdin_open: true
+#    tty: true
+#    depends_on:
+#      - dst-db
+#      - src-db
+#    networks:
+#      - platform_integration
+
+volumes:
+  vol-src-db:
+  vol-dst-db:
+
+networks:
+  platform_integration:
+    external: true

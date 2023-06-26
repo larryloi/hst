@@ -1,0 +1,136 @@
+### pfm_hst
+---
+jobs:
+  archive:
+    general:
+      worker: archive_interactor
+      # auto_start: false
+      # start_after: 1m
+      wait: 1m
+      batches: <%= ENV['BATCHES_DEFAULT'] || "1" %>
+      batch_size: <%= ENV['BATCH_SIZE_DEFAULT'] || "200" %>
+      primary_key: id
+      primary_key_uuid: false
+    jobs:
+      - id: 01H31HJDEZPGQTE3H3JZ999C9P
+        batches: <%= ENV['BATCHES_BETTING_RECORD'] || "1" %>
+        batch_size: <%= ENV['BATCH_SIZE_BETTING_RECORD'] || "200" %>
+        from: ops.betting_record
+        to: hst.hst_betting_record_settled
+        primary_key: betting_record_id
+        primary_key_uuid: false
+        trace_attr: settled_time
+        filter: |
+          dataset.exclude(settled_time: '0000-00-00 00:00:00')
+#      - id: 01H3BBAMWPK6MM6Q7CF5K2FBAM
+#        batches: <%= ENV['BATCHES_BETTING_RECORD'] || "1" %>
+#        batch_size: <%= ENV['BATCH_SIZE_BETTING_RECORD'] || "200" %>
+#        from: ops.betting_record
+#        to: hst.hst_betting_record_unsettled
+#        primary_key: betting_record_id
+#        primary_key_uuid: false
+#        trace_attr: data_last_update_time
+#        filter: |
+#          dataset.where(settled_time: '0000-00-00 00:00:00')
+      - id: EQAOD3G7ZVZJXQS5WHSRD7ZG5G
+        batches: <%= ENV['BATCHES_WALLET_RECORD'] || "1" %>
+        batch_size: <%= ENV['BATCH_SIZE_WALLET_RECORD'] || "200" %>
+        from: ops.wallet_record
+        to: hst.hst_wallet_record
+        primary_key: wallet_record_id
+        primary_key_uuid: false
+        trace_attr: transaction_time
+
+
+
+  purge:
+    general:
+      worker: purge_interactor
+      wait: 5m
+      start_after: 1m
+      batches: 1
+      batch_size: 200
+      primary_key: id
+      # primary_key_uuid: false
+      retention_period: "14d"
+    jobs:
+      # Purge ops
+      - id: 01H31WMR9D4YQTNYDP6XE143J9
+        from: ops.betting_record
+        primary_key: betting_record_id
+        primary_key_uuid: false
+        filter: |
+          dataset.exclude(settled_time: '0000-00-00 00:00:00')
+        strategy: archival
+        retention_period: <%= ENV['RTT_OPS_BETTING_RECORD'] || "90d" %>
+      - id: 01H31WNA4D64Y5MK7MXWNK3J8F
+        from: ops.wallet_record
+        primary_key: wallet_record_id
+        primary_key_uuid: false
+        strategy: archival
+        retention_period: <%= ENV['RTT_OPS_WALLET_RECORD'] || "90d" %>
+
+
+      # Purge hst
+
+
+      # Purge General
+        ### Take care all archive job id
+      - id: C6036448E21B4E6598DB86F9A4
+        from: ops.chronos_archive_transactions
+        filter: |
+          dataset.where(archive_job_id: ["EQAOD3G7ZVZJXQS5WHSRD7ZG5G"])
+        retention_period: <%= ENV['RTT_OPS_CHRONOS_ARCHIVE_TRANSACTIONS'] || "3650d" %>
+        strategy: direct
+        purge_attr: closed_at
+
+        ### Take care all purge job id
+      - id: 0ZJDIW16BF20QX626PFJJL98D2
+        from: ops.chronos_trace_logs
+        retention_period: <%= ENV['TRACE_LOGS_RETENTION_PERIOD'] || "3d" %>
+        strategy: direct
+        purge_attr: created_at
+
+        ### Take care all archive job id
+      - id: CEB1E95D304B490A9254D86520
+        from: hst.chronos_archive_transaction_logs
+        retention_period: <%= ENV['RTT_HST_CHRONOS_ARCHIVE_TRANSACTION_LOGS'] || "3650d" %>
+        filter: |
+          dataset.where(archive_job_id: ["EQAOD3G7ZVZJXQS5WHSRD7ZG5G"])
+        strategy: direct
+        purge_attr: closed_at
+
+        ### Take care all archive/purge job id
+      - id: J6EG49EIZ5XU68SBMVX4PCFUF0
+        from: hst.chronos_trace_logs
+        retention_period: <%= ENV['TRACE_LOGS_RETENTION_PERIOD'] || "3d" %>
+        strategy: direct
+        purge_attr: created_at
+
+
+  monitor:
+    general:
+      worker: monitor_interactor
+      # auto_start: false
+      # start_after: 5s
+    jobs:
+        ### Take care all archive job id
+      - id: RSVUVNORUKPQP38EO2SLSQA8ZF
+        trace_type: archive
+        trace_from: "hst"
+        every: "10m"
+        abnormal_latency: "20m"
+        job_id: ["EQAOD3G7ZVZJXQS5WHSRD7ZG5G"]
+        ### Take care all PRUGE job id
+      - id: ZGGJ4BKAIIL9SRWPF29TG2X6DN
+        trace_type: purge
+        trace_from: "ops"
+        every: "20m"
+        abnormal_latency: "2h"
+        ### Take care all PRUGE job id
+      - id: GD573XAFNZJWR9MD4CIAE6P03V
+        trace_type: purge
+        trace_from: "hst"
+        every: "20m"
+        abnormal_latency: "2h"
+
